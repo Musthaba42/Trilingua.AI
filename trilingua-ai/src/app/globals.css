@@ -1,0 +1,241 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ========================================
+   Trilingua AI — Design System
+   ======================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@layer base {
+  :root {
+    --color-primary: 262 80% 50%;
+    --color-accent: 175 80% 45%;
+    --radius: 12px;
+  }
+
+  * {
+    @apply border-dark-border;
+  }
+
+  body {
+    @apply bg-dark-bg text-white font-sans antialiased;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    @apply w-2;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-dark-bg;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-dark-surface rounded-full hover:bg-primary-700;
+  }
+
+  /* Selection color */
+  ::selection {
+    @apply bg-primary-500/30 text-white;
+  }
+}
+
+@layer components {
+  /* Glassmorphism card */
+  .glass-card {
+    @apply bg-dark-card/80 backdrop-blur-xl border border-dark-border rounded-md shadow-card;
+  }
+
+  .glass-card-hover {
+    @apply glass-card transition-all duration-300 hover:shadow-card-hover hover:border-primary-500/30 hover:-translate-y-0.5;
+  }
+
+  /* Gradient text */
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary-400 via-primary-300 to-accent-400 bg-clip-text text-transparent;
+  }
+
+  /* Premium glow button */
+  .btn-glow {
+    @apply relative overflow-hidden bg-primary-500 text-white font-semibold px-6 py-3 rounded-sm
+           transition-all duration-300 hover:bg-primary-600 hover:shadow-glow
+           active:scale-[0.98];
+  }
+
+  .btn-glow::before {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-r from-primary-400/0 via-white/10 to-primary-400/0
+           translate-x-[-200%] transition-transform duration-700;
+  }
+
+  .btn-glow:hover::before {
+    @apply translate-x-[200%];
+  }
+
+  /* Stat card */
+  .stat-card {
+    @apply glass-card p-5 flex flex-col gap-2 relative overflow-hidden;
+  }
+
+  .stat-card::after {
+    content: '';
+    @apply absolute -top-16 -right-16 w-32 h-32 rounded-full opacity-10;
+  }
+
+  /* Input fields */
+  .input-field {
+    @apply w-full px-4 py-3 bg-dark-surface border border-dark-border rounded-sm
+           text-white placeholder:text-gray-500 
+           focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500
+           transition-all duration-200;
+  }
+
+  /* Sidebar nav link */
+  .nav-link {
+    @apply flex items-center gap-3 px-4 py-2.5 rounded-sm text-gray-400
+           transition-all duration-200 hover:text-white hover:bg-dark-hover;
+  }
+
+  .nav-link-active {
+    @apply nav-link text-white bg-primary-500/10 border-l-2 border-primary-500;
+  }
+
+  /* Badge variants */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold;
+  }
+
+  .badge-primary {
+    @apply badge bg-primary-500/20 text-primary-300;
+  }
+
+  .badge-accent {
+    @apply badge bg-accent-500/20 text-accent-400;
+  }
+
+  .badge-success {
+    @apply badge bg-green-500/20 text-green-400;
+  }
+
+  .badge-warning {
+    @apply badge bg-amber-500/20 text-amber-400;
+  }
+
+  .badge-free {
+    @apply badge bg-green-500/20 text-green-400 border border-green-500/30;
+  }
+
+  .badge-pro {
+    @apply badge bg-primary-500/20 text-primary-300 border border-primary-500/30;
+  }
+
+  /* Language pill */
+  .lang-pill {
+    @apply px-2 py-0.5 text-xs font-bold rounded uppercase tracking-wider;
+  }
+
+  .lang-pill-en {
+    @apply lang-pill bg-blue-500/20 text-blue-400;
+  }
+
+  .lang-pill-ta {
+    @apply lang-pill bg-orange-500/20 text-orange-400;
+  }
+
+  .lang-pill-hi {
+    @apply lang-pill bg-green-500/20 text-green-400;
+  }
+
+  /* Progress ring */
+  .progress-ring {
+    @apply relative inline-flex items-center justify-center;
+  }
+
+  .progress-ring-circle {
+    transition: stroke-dashoffset 0.5s ease-out;
+    transform: rotate(-90deg);
+    transform-origin: 50% 50%;
+  }
+
+  /* Chat bubble */
+  .chat-user {
+    @apply bg-primary-500/20 border border-primary-500/30 rounded-lg rounded-tr-sm p-4 text-sm;
+  }
+
+  .chat-ai {
+    @apply bg-dark-surface border border-dark-border rounded-lg rounded-tl-sm p-4 text-sm;
+  }
+
+  /* Shimmer loading */
+  .shimmer {
+    @apply bg-gradient-to-r from-dark-surface via-dark-hover to-dark-surface bg-[length:200%_100%] animate-shimmer;
+  }
+
+  /* Section header */
+  .section-header {
+    @apply text-lg font-semibold text-white flex items-center gap-2;
+  }
+
+  /* Divider */
+  .divider {
+    @apply border-t border-dark-border my-6;
+  }
+}
+
+@layer utilities {
+  /* Hide scrollbar but allow scrolling */
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Gradient borders */
+  .gradient-border {
+    @apply relative;
+  }
+  .gradient-border::before {
+    content: '';
+    @apply absolute inset-0 rounded-md p-[1px];
+    background: linear-gradient(135deg, #6D28D9, #14B8A6);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+  }
+
+  /* Text balance */
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Light mode overrides */
+.light body,
+[data-theme="light"] body {
+  @apply bg-light-bg text-gray-900;
+}
+
+.light .glass-card,
+[data-theme="light"] .glass-card {
+  @apply bg-light-card/90 border-light-border shadow-sm;
+}
+
+.light .input-field,
+[data-theme="light"] .input-field {
+  @apply bg-light-surface border-light-border text-gray-900 placeholder:text-gray-400;
+}
+
+.light .nav-link,
+[data-theme="light"] .nav-link {
+  @apply text-gray-600 hover:text-gray-900 hover:bg-light-hover;
+}
+
+.light .chat-ai,
+[data-theme="light"] .chat-ai {
+  @apply bg-light-surface border-light-border;
+}

@@ -1,0 +1,562 @@
+// Prisma Schema for Trilingua AI
+// Full data model — 29 tables covering users, courses, AI chat, progress, payments, and admin
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// AUTH & USER TABLES
+// ============================================================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  image         String?
+  role          Role      @default(LEARNER)
+  password      String?   // Hashed password for credentials auth
+  emailVerified DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts        Account[]
+  sessions        Session[]
+  profile         LearnerProfile?
+  onboarding      OnboardingAnswer[]
+  enrollments     Enrollment[]
+  progress        Progress[]
+  streaks         Streak[]
+  chatSessions    ChatSession[]
+  codeSubmissions CodeSubmission[]
+  quizAttempts    QuizAttempt[]
+  subscriptions   Subscription[]
+  payments        Payment[]
+  auditLogs       AuditLog[]
+  tutorMessages   TutorMessage[]
+}
+
+enum Role {
+  LEARNER
+  ADMIN
+  SUPER_ADMIN
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ============================================================
+// LEARNER PROFILE & ONBOARDING
+// ============================================================
+
+model LearnerProfile {
+  id              String       @id @default(cuid())
+  userId          String       @unique
+  learnerType     LearnerType?
+  experienceLevel ExpLevel?
+  preferredLang   String       @default("en")
+  goal            String?
+  domainInterests String[]     // array of domain slugs
+  onboardingDone  Boolean      @default(false)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum LearnerType {
+  STUDENT
+  WORKER
+  BUSINESS
+  OTHER
+}
+
+enum ExpLevel {
+  BASIC
+  MEDIUM
+  PRO
+}
+
+model OnboardingAnswer {
+  id        String   @id @default(cuid())
+  userId    String
+  question  String
+  answer    String
+  step      Int
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ============================================================
+// CONTENT: DOMAINS, COURSES, LESSONS
+// ============================================================
+
+model Domain {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  description String?  @db.Text
+  icon        String?  // Lucide icon name
+  color       String?  // Hex color for the domain
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  courses Course[]
+}
+
+model Course {
+  id           String   @id @default(cuid())
+  domainId     String
+  slug         String   @unique
+  title        String
+  description  String?  @db.Text
+  thumbnail    String?
+  difficulty   ExpLevel @default(BASIC)
+  estimatedHrs Float?
+  isFree       Boolean  @default(false)
+  isPublished  Boolean  @default(false)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  domain       Domain            @relation(fields: [domainId], references: [id])
+  playlists    Playlist[]
+  lessons      Lesson[]
+  langVariants LanguageVariant[]
+  enrollments  Enrollment[]
+  projectDemos ProjectDemo[]
+
+  @@index([domainId])
+  @@index([isPublished])
+}
+
+model LanguageVariant {
+  id          String  @id @default(cuid())
+  courseId    String
+  lang        String  // "en", "ta", "hi"
+  title       String
+  description String? @db.Text
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, lang])
+}
+
+model Playlist {
+  id        String @id @default(cuid())
+  courseId  String
+  youtubeId String // YouTube playlist ID
+  title     String
+  lang      String @default("en")
+  videoCount Int?
+  sourceUrl String
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([courseId])
+}
+
+model Lesson {
+  id          String     @id @default(cuid())
+  courseId    String
+  title       String
+  description String?    @db.Text
+  sortOrder   Int        @default(0)
+  duration    Int?       // seconds
+  isFree      Boolean    @default(false)
+  type        LessonType @default(VIDEO)
+  createdAt   DateTime   @default(now())
+
+  course     Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  videoLinks VideoLink[]
+  exercises  PracticeExercise[]
+  quizzes    Quiz[]
+  progress   Progress[]
+
+  @@index([courseId])
+  @@index([sortOrder])
+}
+
+enum LessonType {
+  VIDEO
+  PRACTICE
+  PROJECT
+  READING
+  QUIZ
+}
+
+model VideoLink {
+  id        String @id @default(cuid())
+  lessonId  String
+  youtubeId String
+  lang      String @default("en")
+  title     String
+  thumbnail String?
+  duration  Int?   // seconds
+
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([lessonId, lang])
+}
+
+// ============================================================
+// PRACTICE, QUIZZES, PROJECTS
+// ============================================================
+
+model PracticeExercise {
+  id           String   @id @default(cuid())
+  lessonId     String
+  title        String
+  instructions String   @db.Text
+  starterCode  String?  @db.Text
+  solution     String?  @db.Text
+  language     String   @default("python") // programming language
+  testCases    Json?    // [{input, expectedOutput, description}]
+  difficulty   ExpLevel @default(BASIC)
+  sortOrder    Int      @default(0)
+
+  lesson      Lesson           @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  submissions CodeSubmission[]
+
+  @@index([lessonId])
+}
+
+model CodeSubmission {
+  id         String   @id @default(cuid())
+  userId     String
+  exerciseId String
+  code       String   @db.Text
+  output     String?  @db.Text
+  passed     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  user     User             @relation(fields: [userId], references: [id])
+  exercise PracticeExercise @relation(fields: [exerciseId], references: [id])
+
+  @@index([userId])
+  @@index([exerciseId])
+}
+
+model Quiz {
+  id          String  @id @default(cuid())
+  lessonId    String
+  question    String  @db.Text
+  options     Json    // [{text, isCorrect}]
+  explanation String? @db.Text
+  sortOrder   Int     @default(0)
+
+  lesson   Lesson        @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  attempts QuizAttempt[]
+
+  @@index([lessonId])
+}
+
+model QuizAttempt {
+  id        String   @id @default(cuid())
+  userId    String
+  quizId    String
+  answer    Int      // selected option index
+  correct   Boolean
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+  quiz Quiz @relation(fields: [quizId], references: [id])
+
+  @@index([userId, quizId])
+}
+
+model ProjectDemo {
+  id           String  @id @default(cuid())
+  courseId     String
+  title        String
+  description  String  @db.Text
+  repoUrl      String?
+  liveUrl      String?
+  thumbnail    String?
+  instructions String? @db.Text
+  sortOrder    Int     @default(0)
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([courseId])
+}
+
+model ResearchDocument {
+  id        String   @id @default(cuid())
+  courseId  String
+  title     String
+  paperUrl  String?
+  summary   String?  @db.Text
+  aiSummary String?  @db.Text
+  tags      String[]
+  createdAt DateTime @default(now())
+
+  @@index([courseId])
+}
+
+// ============================================================
+// PROGRESS & ENGAGEMENT
+// ============================================================
+
+model Enrollment {
+  id          String    @id @default(cuid())
+  userId      String
+  courseId     String
+  enrolledAt  DateTime  @default(now())
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+
+  user   User   @relation(fields: [userId], references: [id])
+  course Course @relation(fields: [courseId], references: [id])
+
+  @@unique([userId, courseId])
+  @@index([userId])
+}
+
+model Progress {
+  id           String         @id @default(cuid())
+  userId       String
+  lessonId     String
+  status       ProgressStatus @default(NOT_STARTED)
+  watchedSec   Int            @default(0)
+  completedAt  DateTime?
+  lastAccessed DateTime       @default(now())
+
+  user   User   @relation(fields: [userId], references: [id])
+  lesson Lesson @relation(fields: [lessonId], references: [id])
+
+  @@unique([userId, lessonId])
+  @@index([userId])
+}
+
+enum ProgressStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+model Streak {
+  id      String   @id @default(cuid())
+  userId  String
+  date    DateTime @db.Date
+  minutes Int      @default(0)
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, date])
+  @@index([userId])
+}
+
+// ============================================================
+// AI TUTOR CHAT
+// ============================================================
+
+model ChatSession {
+  id        String   @id @default(cuid())
+  userId    String
+  courseId   String?
+  lessonId  String?
+  title     String?
+  context   Json?    // {lessonTitle, videoTimestamp, codeSnippet, etc.}
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User          @relation(fields: [userId], references: [id])
+  messages ChatMessage[]
+
+  @@index([userId])
+}
+
+model ChatMessage {
+  id        String      @id @default(cuid())
+  sessionId String
+  role      MessageRole
+  content   String      @db.Text
+  lang      String      @default("en")
+  tokens    Int?
+  createdAt DateTime    @default(now())
+
+  session ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+// ============================================================
+// SUBSCRIPTIONS & PAYMENTS (TODO: Phase 7 — Schema only)
+// ============================================================
+
+model Subscription {
+  id            String    @id @default(cuid())
+  userId        String
+  plan          Plan
+  status        SubStatus @default(ACTIVE)
+  startDate     DateTime  @default(now())
+  endDate       DateTime
+  razorpaySubId String?   @unique
+  createdAt     DateTime  @default(now())
+
+  user     User            @relation(fields: [userId], references: [id])
+  features FeatureAccess[]
+
+  @@index([userId])
+}
+
+enum Plan {
+  FREE
+  BASIC_199
+  PRO_299
+  PREMIUM_399
+}
+
+enum SubStatus {
+  ACTIVE
+  CANCELLED
+  EXPIRED
+  PAST_DUE
+}
+
+model FeatureAccess {
+  id             String  @id @default(cuid())
+  subscriptionId String
+  feature        Feature
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id])
+
+  @@index([subscriptionId])
+}
+
+enum Feature {
+  BASIC_VIDEOS
+  AI_TUTOR_BASIC
+  AI_TUTOR_ADVANCED
+  LIVE_CODING
+  LANGUAGE_SWITCH
+  PROJECT_DEMOS
+  RESEARCH_ASSIST
+  ADVANCED_ANALYTICS
+  PRIORITY_SUPPORT
+}
+
+model Payment {
+  id              String    @id @default(cuid())
+  userId          String
+  amount          Int       // in paise (INR * 100)
+  currency        String    @default("INR")
+  status          PayStatus
+  razorpayOrderId String?   @unique
+  razorpayPayId   String?   @unique
+  plan            Plan
+  createdAt       DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+enum PayStatus {
+  PENDING
+  CAPTURED
+  FAILED
+  REFUNDED
+}
+
+// ============================================================
+// ADMIN & AUDIT (TODO: Phase 8/9 — Schema only)
+// ============================================================
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String
+  entity    String
+  entityId  String?
+  details   Json?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([entity, entityId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model FeatureFlag {
+  id      String  @id @default(cuid())
+  key     String  @unique
+  enabled Boolean @default(false)
+  config  Json?
+}
+
+model SystemPrompt {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  prompt    String   @db.Text
+  version   Int      @default(1)
+  isActive  Boolean  @default(true)
+  updatedAt DateTime @updatedAt
+}
+
+model TutorMessage {
+  id        String   @id @default(cuid())
+  userId    String
+  message   String   @db.Text
+  response  String   @db.Text
+  language  String
+  topic     String
+  domain    String
+  modelUsed String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}

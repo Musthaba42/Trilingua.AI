@@ -1,0 +1,21 @@
+# dependencies
+node_modules/
+trilingua-ai/node_modules/
+
+# next.js build
+.next/
+trilingua-ai/.next/
+
+# env files
+.env
+.env*.local
+trilingua-ai/.env
+trilingua-ai/.env*.local
+
+# git zip and other zips
+.git.zip
+*.zip
+
+# OS files
+.DS_Store
+Thumbs.db
