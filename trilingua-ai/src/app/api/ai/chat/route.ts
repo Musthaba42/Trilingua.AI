@@ -22,10 +22,10 @@ export async function POST(request: Request) {
       success: true,
       data: { content: response, source: "gemini" },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("AI Chat Error:", error);
     return NextResponse.json(
-      { success: false, error: "Failed to get a response. Please try again." },
+      { success: false, error: error.message || "Failed to get a response. Please try again." },
       { status: 500 }
     );
   }
