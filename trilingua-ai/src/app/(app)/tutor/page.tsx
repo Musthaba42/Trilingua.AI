@@ -69,20 +69,20 @@ export default function TutorPage() {
         role: "assistant",
         content: data.success
           ? data.data.content
-          : "Sorry, I encountered an error. Please try again.",
+          : `Sorry, I encountered an error: ${data.error || "Please try again."}`,
         lang,
         source: data.data?.source,
       };
 
       setMessages((prev) => [...prev, aiMsg]);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Tutor error:", err);
       setMessages((prev) => [
         ...prev,
         {
           id: (Date.now() + 1).toString(),
           role: "assistant",
-          content: "Sorry, I'm having trouble connecting. Please try again in a moment.",
+          content: `Sorry, I'm having trouble connecting: ${err.message || "Please try again in a moment."}`,
           lang,
         },
       ]);

@@ -132,18 +132,18 @@ export default function LessonPlayerPage() {
         role: "assistant",
         content: data.success
           ? data.data.content
-          : "Sorry, I encountered an error. Please try again.",
+          : `Sorry, I encountered an error: ${data.error || "Please try again."}`,
       };
 
       setChatMessages((prev) => [...prev, aiMsg]);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Lesson tutor error:", err);
       setChatMessages((prev) => [
         ...prev,
         {
           id: (Date.now() + 1).toString(),
           role: "assistant",
-          content: "Sorry, I'm having trouble connecting. Please try again.",
+          content: `Sorry, I'm having trouble connecting: ${err.message || "Please try again."}`,
         },
       ]);
     } finally {
