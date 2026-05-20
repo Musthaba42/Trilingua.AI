@@ -17,6 +17,63 @@ const isCodeRequest = (msg: string): boolean => {
   return codeKeywords.some(kw => lowerMsg.includes(kw)) || /[{}[\]();=<>]/g.test(msg);
 };
 
+function getMockTutorResponse(message: string, language: string, currentTopic: string): string {
+  const lang = language.toLowerCase();
+  
+  if (lang.includes("tamil") || lang === "ta") {
+    return `வணக்கம்! நான் உங்கள் Trilingua AI Tutor (Demo Mode).
+
+தற்போது நீங்கள் படித்துக் கொண்டிருக்கும் தலைப்பு: **${currentTopic}**. 
+
+கணினி நிரலாக்கம் (Programming) என்பது கணினிக்கு நாம் கொடுக்கும் கட்டளைகளின் தொகுப்பாகும்.
+
+எடுத்துக்காட்டு (JavaScript):
+\`\`\`javascript
+// ஒரு எளிய செயல்பாடு
+function welcome() {
+  console.log("வரவேற்கிறோம்!");
+}
+welcome();
+\`\`\`
+
+வேறு ஏதாவது சந்தேகம் உள்ளதா?`;
+  } else if (lang.includes("hindi") || lang === "hi") {
+    return `नमस्ते! मैं आपका Trilingua AI Tutor (Demo Mode) हूँ।
+
+आपका वर्तमान विषय है: **${currentTopic}**।
+
+प्रोग्रामिंग में हम समस्याओं को छोटे कार्यों में विभाजित करते हैं।
+
+उदाहरण (JavaScript):
+\`\`\`javascript
+// एक साधारण फ़ंक्शन
+function welcome() {
+  console.log("स्वागत है!");
+}
+welcome();
+\`\`\`
+
+क्या आप कुछ और जानना चाहते हैं?`;
+  } else {
+    return `Hi! I am your Trilingua AI Tutor (Demo Mode).
+
+Your current topic is: **${currentTopic}**.
+
+In programming, we break down complex problems into smaller, manageable functions.
+
+Example (JavaScript):
+\`\`\`javascript
+// A simple greeting function
+function greetUser(name) {
+  return "Hello, " + name + "!";
+}
+console.log(greetUser("Learner"));
+\`\`\`
+
+Let me know if you want to explore any specific coding concept!`;
+  }
+}
+
 export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
@@ -75,22 +132,28 @@ export async function POST(request: Request) {
       parts: [{ text: msg.content }]
     }));
 
-    // 2. Initialize model and start chat
-    const model = genAI.getGenerativeModel({
-      model: modelName,
-      systemInstruction: systemPrompt,
-    });
+    let aiResponse: string;
+    try {
+      // 2. Initialize model and start chat
+      const model = genAI.getGenerativeModel({
+        model: modelName,
+        systemInstruction: systemPrompt,
+      });
 
-    const chat = model.startChat({
-      history: apiHistory,
-      generationConfig: {
-        temperature: 0.4,
-        maxOutputTokens: 300,
-      }
-    });
+      const chat = model.startChat({
+        history: apiHistory,
+        generationConfig: {
+          temperature: 0.4,
+          maxOutputTokens: 300,
+        }
+      });
 
-    const result = await chat.sendMessage(message);
-    const aiResponse = result.response.text();
+      const result = await chat.sendMessage(message);
+      aiResponse = result.response.text();
+    } catch (apiError) {
+      console.warn("Gemini API call failed, using mock tutor response:", apiError);
+      aiResponse = getMockTutorResponse(message, resolvedLanguage, resolvedTopic);
+    }
 
     // 3. Save User message & AI response together into a single TutorMessage record
     try {
