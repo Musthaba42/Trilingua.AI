@@ -38,6 +38,7 @@ const testAccounts: Record<
 };
 
 export const authOptions: NextAuthOptions = {
+  secret: process.env.NEXTAUTH_SECRET,
   // No adapter — pure JWT mode for demo (no DB dependency)
   session: {
     strategy: "jwt",
