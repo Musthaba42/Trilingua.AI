@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+import { generateGeminiContent } from "@/lib/gemini";
 
 const FALLBACK_INSIGHTS = `## 🎯 Job Market Insights
 
@@ -36,8 +34,6 @@ export async function POST(request: Request) {
     const { skills, completedCourses, experienceLevel, domainProgress, lang } = await request.json();
 
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-
       const langInstruction = lang === "ta"
         ? "Respond in Tamil (use English for technical terms and job titles)."
         : lang === "hi"
@@ -62,8 +58,7 @@ Student Profile:
 
 Use emojis, markdown formatting, and make it visually engaging. Keep under 500 words.`;
 
-      const result = await model.generateContent(prompt);
-      const response = result.response.text();
+      const response = await generateGeminiContent(prompt, "gemini-2.0-flash");
 
       return NextResponse.json({
         success: true,

@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+import { generateGeminiContent } from "@/lib/gemini";
 
 export async function POST(request: Request) {
   try {
@@ -19,15 +17,10 @@ export async function POST(request: Request) {
 
     let summary: string;
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-      const result = await model.generateContent({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        generationConfig: {
-          maxOutputTokens: 200,
-          temperature: 0.5,
-        }
+      summary = await generateGeminiContent(prompt, "gemini-2.0-flash", {
+        maxOutputTokens: 200,
+        temperature: 0.5,
       });
-      summary = result.response.text();
     } catch (apiError: any) {
       console.error("Gemini Research summary failed:", apiError);
       throw apiError;

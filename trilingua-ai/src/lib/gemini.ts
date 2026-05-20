@@ -3,30 +3,158 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 /**
- * Generate an AI tutor response using Gemini
+ * Unified content generation wrapper. Supports OpenRouter and Google Gemini SDK.
+ */
+export async function generateGeminiContent(
+  prompt: string,
+  modelName: string = "gemini-2.0-flash",
+  generationConfig?: { temperature?: number; maxOutputTokens?: number; systemInstruction?: string }
+): Promise<string> {
+  try {
+    if (process.env.OPENROUTER_API_KEY) {
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": "https://trilingua-ai.vercel.app",
+          "X-Title": "Trilingua AI",
+        },
+        body: JSON.stringify({
+          model: process.env.OPENROUTER_MODEL || "google/gemini-2.0-flash-exp:free",
+          messages: [
+            ...(generationConfig?.systemInstruction ? [{ role: "system", content: generationConfig.systemInstruction }] : []),
+            { role: "user", content: prompt }
+          ],
+          temperature: generationConfig?.temperature ?? 0.7,
+          max_tokens: generationConfig?.maxOutputTokens ?? 1024,
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`OpenRouter API failed with status ${response.status}: ${errorText}`);
+      }
+
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content;
+      if (!content) {
+        throw new Error("Empty response from OpenRouter");
+      }
+      return content;
+    } else {
+      const model = genAI.getGenerativeModel({ model: modelName });
+      const result = await model.generateContent({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        generationConfig: {
+          maxOutputTokens: generationConfig?.maxOutputTokens,
+          temperature: generationConfig?.temperature,
+        }
+      });
+      return result.response.text();
+    }
+  } catch (error) {
+    console.error("generateGeminiContent error:", error);
+    throw error;
+  }
+}
+
+/**
+ * Unified chat completion wrapper with history support. Supports OpenRouter and Google Gemini SDK.
+ */
+export async function generateGeminiChat(
+  message: string,
+  history: Array<{ role: string; content: string }>,
+  systemPrompt: string,
+  modelName: string = "gemini-2.0-flash",
+  generationConfig?: { temperature?: number; maxOutputTokens?: number }
+): Promise<string> {
+  try {
+    if (process.env.OPENROUTER_API_KEY) {
+      const messages = [
+        { role: "system", content: systemPrompt },
+        ...history.map(msg => ({
+          role: msg.role === "user" ? "user" : "assistant",
+          content: msg.content,
+        })),
+        { role: "user", content: message }
+      ];
+
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": "https://trilingua-ai.vercel.app",
+          "X-Title": "Trilingua AI",
+        },
+        body: JSON.stringify({
+          model: process.env.OPENROUTER_MODEL || "google/gemini-2.0-flash-exp:free",
+          messages,
+          temperature: generationConfig?.temperature ?? 0.7,
+          max_tokens: generationConfig?.maxOutputTokens ?? 1024,
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`OpenRouter API failed with status ${response.status}: ${errorText}`);
+      }
+
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content;
+      if (!content) {
+        throw new Error("Empty response from OpenRouter");
+      }
+      return content;
+    } else {
+      const model = genAI.getGenerativeModel({
+        model: modelName,
+        systemInstruction: systemPrompt,
+      });
+
+      const apiHistory = history.map(msg => ({
+        role: msg.role === "user" ? "user" as const : "model" as const,
+        parts: [{ text: msg.content }],
+      }));
+
+      const chat = model.startChat({
+        history: apiHistory,
+        generationConfig: {
+          maxOutputTokens: generationConfig?.maxOutputTokens,
+          temperature: generationConfig?.temperature,
+        },
+      });
+
+      const result = await chat.sendMessage(message);
+      return result.response.text();
+    }
+  } catch (error) {
+    console.error("generateGeminiChat error:", error);
+    throw error;
+  }
+}
+
+/**
+ * Generate an AI tutor response using Gemini or OpenRouter
  */
 export async function generateTutorResponse(
   message: string,
   lang: string = "en",
   context?: { lessonTitle?: string; courseTitle?: string; conversationHistory?: Array<{ role: string; content: string }> }
 ): Promise<string> {
-  try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+  const languageMap: Record<string, string> = {
+    en: "English",
+    ta: "Tamil",
+    hi: "Hindi",
+  };
+  const userLanguage = languageMap[lang] || "English";
 
-    // Map language code to human-readable language names
-    const languageMap: Record<string, string> = {
-      en: "English",
-      ta: "Tamil",
-      hi: "Hindi",
-    };
-    const userLanguage = languageMap[lang] || "English";
+  const currentTopic = context?.lessonTitle
+    ? `Studying "${context.lessonTitle}"${context.courseTitle ? ` in the course "${context.courseTitle}"` : ""}`
+    : "General Coding & Software Development";
 
-    // Format the current topic from context or fallback to general coding
-    const currentTopic = context?.lessonTitle
-      ? `Studying "${context.lessonTitle}"${context.courseTitle ? ` in the course "${context.courseTitle}"` : ""}`
-      : "General Coding & Software Development";
-
-    const systemPrompt = `You are Trilingua AI Tutor — a friendly, expert teaching assistant for an EdTech platform teaching AI, machine learning, data science, and programming in Tamil, English, and Hindi.
+  const systemPrompt = `You are Trilingua AI Tutor — a friendly, expert teaching assistant for an EdTech platform teaching AI, machine learning, data science, and programming in Tamil, English, and Hindi.
 
 RULES:
 - Always respond in the language the user writes in (Tamil → Tamil, English → English, Hindi → Hindi)
@@ -41,33 +169,16 @@ CURRENT CONTEXT:
 - User language: ${userLanguage}
 - Current topic: ${currentTopic}`;
 
-    // Build conversation history for context
-    const history = context?.conversationHistory?.map(msg => ({
-      role: msg.role === "user" ? "user" as const : "model" as const,
-      parts: [{ text: msg.content }],
-    })) || [];
-
-    const chat = model.startChat({
-      history,
-      generationConfig: {
-        maxOutputTokens: 1024,
-        temperature: 0.7,
-      },
-    });
-
-    // Prepend system instruction to first message if no history
-    const fullMessage = history.length === 0
-       ? `${systemPrompt}\n\n---\nStudent's question: ${message}`
-      : message;
-
-    const result = await chat.sendMessage(fullMessage);
-    const response = result.response.text();
-
-    return response;
-  } catch (error) {
-    console.error("Gemini API call failed:", error);
-    throw error;
-  }
+  return generateGeminiChat(
+    message,
+    context?.conversationHistory || [],
+    systemPrompt,
+    "gemini-2.0-flash",
+    {
+      maxOutputTokens: 1024,
+      temperature: 0.7,
+    }
+  );
 }
 
 /**
@@ -80,8 +191,6 @@ export async function generateCareerSuggestions(
   lang: string = "en"
 ): Promise<string> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
-
     const langInstruction = lang === "ta"
       ? "Respond in Tamil (use English for technical terms)."
       : lang === "hi"
@@ -104,8 +213,10 @@ Student Profile:
 
 Keep the response structured with clear headings and under 400 words. Use emojis for visual appeal.`;
 
-    const result = await model.generateContent(prompt);
-    return result.response.text();
+    return await generateGeminiContent(prompt, "gemini-1.5-pro", {
+      maxOutputTokens: 1000,
+      temperature: 0.5,
+    });
   } catch (error) {
     console.warn("Gemini Career API failed, falling back to mock career suggestions:", error);
     return getMockCareerSuggestions(skills, completedCourses, experienceLevel, lang);

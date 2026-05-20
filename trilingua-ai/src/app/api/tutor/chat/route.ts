@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+import { generateGeminiChat } from "@/lib/gemini";
 
 const isCodeRequest = (msg: string): boolean => {
   const codeKeywords = [
@@ -71,30 +69,18 @@ export async function POST(request: Request) {
 
     const modelName = isCodeRequest(message) ? "gemini-1.5-pro" : "gemini-2.0-flash";
 
-    // 1. Prepare conversation history for Gemini API
-    const apiHistory = (history || []).map((msg: any) => ({
-      role: msg.role === "user" ? "user" : "model",
-      parts: [{ text: msg.content }]
-    }));
-
     let aiResponse: string;
     try {
-      // 2. Initialize model and start chat
-      const model = genAI.getGenerativeModel({
-        model: modelName,
-        systemInstruction: systemPrompt,
-      });
-
-      const chat = model.startChat({
-        history: apiHistory,
-        generationConfig: {
+      aiResponse = await generateGeminiChat(
+        message,
+        history || [],
+        systemPrompt,
+        modelName,
+        {
           temperature: 0.4,
           maxOutputTokens: 300,
         }
-      });
-
-      const result = await chat.sendMessage(message);
-      aiResponse = result.response.text();
+      );
     } catch (apiError: any) {
       console.error("Gemini API call failed:", apiError);
       throw apiError;

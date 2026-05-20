@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+import { generateGeminiContent } from "@/lib/gemini";
 
 export async function POST(request: Request) {
   try {
@@ -29,15 +27,10 @@ Make it clean, highly educational, and formatted in beautiful Markdown. Do not i
 
     let guide: string;
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
-      const result = await model.generateContent({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        generationConfig: {
-          maxOutputTokens: 1000,
-          temperature: 0.5,
-        }
+      guide = await generateGeminiContent(prompt, "gemini-1.5-pro", {
+        maxOutputTokens: 1000,
+        temperature: 0.5,
       });
-      guide = result.response.text();
     } catch (apiError: any) {
       console.error("Gemini Project guide failed:", apiError);
       throw apiError;
