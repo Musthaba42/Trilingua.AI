@@ -38,7 +38,7 @@ const testAccounts: Record<
 };
 
 export const authOptions: NextAuthOptions = {
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET || "trilingua_ai_secret_fallback_key_for_production_demo_mode_32_chars",
   // No adapter — pure JWT mode for demo (no DB dependency)
   session: {
     strategy: "jwt",

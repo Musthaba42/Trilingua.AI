@@ -2,7 +2,7 @@ import { z } from "zod";
 
 const envSchema = z.object({
   DATABASE_URL: z.string().optional().default(""),
-  NEXTAUTH_URL: z.string().url().default("http://localhost:3000"),
+  NEXTAUTH_URL: z.string().default("http://localhost:3000"),
   NEXTAUTH_SECRET: z.string().min(1).default("dev-secret-change-in-production-32chars"),
   GOOGLE_CLIENT_ID: z.string().optional().default(""),
   GOOGLE_CLIENT_SECRET: z.string().optional().default(""),
