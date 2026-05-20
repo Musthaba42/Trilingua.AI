@@ -3,11 +3,13 @@
   "version": "1.0.0",
   "description": "AI-powered multilingual coding education platform",
   "main": "index.js",
+  "workspaces": [
+    "trilingua-ai"
+  ],
   "scripts": {
-    "dev": "npm run dev --prefix trilingua-ai",
-    "build": "npm run build --prefix trilingua-ai",
-    "start": "npm run start --prefix trilingua-ai",
-    "postinstall": "npm install --prefix trilingua-ai",
+    "dev": "npm run dev --workspace=trilingua-ai",
+    "build": "npm run build --workspace=trilingua-ai",
+    "start": "npm run start --workspace=trilingua-ai",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
