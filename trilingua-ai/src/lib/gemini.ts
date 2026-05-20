@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "AIzaSyARNRKK0xUlxrI8tHTmqWTemlPAEo6F_BY");
 
 /**
  * Generate an AI tutor response using Gemini

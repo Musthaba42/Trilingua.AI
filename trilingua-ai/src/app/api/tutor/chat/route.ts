@@ -4,7 +4,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "AIzaSyARNRKK0xUlxrI8tHTmqWTemlPAEo6F_BY");
 
 const isCodeRequest = (msg: string): boolean => {
   const codeKeywords = [
