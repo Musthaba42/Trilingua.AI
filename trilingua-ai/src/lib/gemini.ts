@@ -21,7 +21,7 @@ export async function generateGeminiContent(
           "X-Title": "Trilingua AI",
         },
         body: JSON.stringify({
-          model: process.env.OPENROUTER_MODEL || "google/gemini-2.0-flash-exp:free",
+          model: process.env.OPENROUTER_MODEL || "openrouter/free",
           messages: [
             ...(generationConfig?.systemInstruction ? [{ role: "system", content: generationConfig.systemInstruction }] : []),
             { role: "user", content: prompt }
@@ -89,7 +89,7 @@ export async function generateGeminiChat(
           "X-Title": "Trilingua AI",
         },
         body: JSON.stringify({
-          model: process.env.OPENROUTER_MODEL || "google/gemini-2.0-flash-exp:free",
+          model: process.env.OPENROUTER_MODEL || "openrouter/free",
           messages,
           temperature: generationConfig?.temperature ?? 0.7,
           max_tokens: generationConfig?.maxOutputTokens ?? 1024,
