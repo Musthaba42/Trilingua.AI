@@ -37,7 +37,13 @@ export async function generateGeminiContent(
       }
 
       const data = await response.json();
-      const content = data.choices?.[0]?.message?.content;
+      const msg = data.choices?.[0]?.message;
+      const content = msg?.content || 
+                      msg?.reasoning_content || 
+                      msg?.reasoning || 
+                      msg?.reasoning_details?.[0]?.text || 
+                      (msg?.reasoning_details && msg.reasoning_details.find((d: any) => d.type === "reasoning.text" || d.text)?.text);
+
       if (!content) {
         throw new Error("Empty response from OpenRouter");
       }
@@ -102,7 +108,13 @@ export async function generateGeminiChat(
       }
 
       const data = await response.json();
-      const content = data.choices?.[0]?.message?.content;
+      const msg = data.choices?.[0]?.message;
+      const content = msg?.content || 
+                      msg?.reasoning_content || 
+                      msg?.reasoning || 
+                      msg?.reasoning_details?.[0]?.text || 
+                      (msg?.reasoning_details && msg.reasoning_details.find((d: any) => d.type === "reasoning.text" || d.text)?.text);
+
       if (!content) {
         throw new Error("Empty response from OpenRouter");
       }
