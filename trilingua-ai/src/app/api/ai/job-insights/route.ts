@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "AIzaSyARNRKK0xUlxrI8tHTmqWTemlPAEo6F_BY");
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 const FALLBACK_INSIGHTS = `## 🎯 Job Market Insights
 

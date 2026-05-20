@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "AIzaSyARNRKK0xUlxrI8tHTmqWTemlPAEo6F_BY");
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 /**
  * Generate an AI tutor response using Gemini
@@ -11,7 +11,7 @@ export async function generateTutorResponse(
   context?: { lessonTitle?: string; courseTitle?: string; conversationHistory?: Array<{ role: string; content: string }> }
 ): Promise<string> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     // Map language code to human-readable language names
     const languageMap: Record<string, string> = {
@@ -80,7 +80,7 @@ export async function generateCareerSuggestions(
   lang: string = "en"
 ): Promise<string> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
 
     const langInstruction = lang === "ta"
       ? "Respond in Tamil (use English for technical terms)."

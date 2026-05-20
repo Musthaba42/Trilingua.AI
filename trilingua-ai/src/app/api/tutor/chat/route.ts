@@ -4,7 +4,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "AIzaSyARNRKK0xUlxrI8tHTmqWTemlPAEo6F_BY");
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 const isCodeRequest = (msg: string): boolean => {
   const codeKeywords = [
@@ -124,7 +124,7 @@ export async function POST(request: Request) {
 
     const systemPrompt = `You are Trilingua AI Tutor. Reply in ${resolvedLanguage} only. Topic: ${resolvedTopic}. Domain: ${resolvedDomain}. Rules: short answers, no filler, beginner-friendly, one code example max, greet only on first message.`;
 
-    const modelName = isCodeRequest(message) ? "gemini-2.5-pro" : "gemini-2.5-flash";
+    const modelName = isCodeRequest(message) ? "gemini-1.5-pro" : "gemini-2.0-flash";
 
     // 1. Prepare conversation history for Gemini API
     const apiHistory = (history || []).map((msg: any) => ({
