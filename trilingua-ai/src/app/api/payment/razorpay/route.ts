@@ -4,15 +4,14 @@ export async function POST(req: NextRequest) {
   try {
     const { amount, planId, planName } = await req.json();
 
-    const keyId     = process.env.RAZORPAY_KEY_ID;
-    const keySecret = process.env.RAZORPAY_KEY_SECRET;
+    const keyId     = process.env.RAZORPAY_KEY_ID || "rzp_test_SrJJknEUK5eNm5";
+    const keySecret = process.env.RAZORPAY_KEY_SECRET || "OqvA4E3HnJXWwTNUI08PyU90";
 
-    if (!keyId || !keySecret || keyId === "your_razorpay_key_id" || keyId === "rzp_test_SrJJknEUK5eNm5") {
-      return NextResponse.json({
-        isMock: true,
-        planId,
-        planName,
-      });
+    if (!keyId || !keySecret || keyId === "your_razorpay_key_id") {
+      return NextResponse.json(
+        { error: "Razorpay keys not configured. Add valid keys to .env.local" },
+        { status: 500 }
+      );
     }
 
     // ── Create real Razorpay order ───────────────────────────────────────────
@@ -39,16 +38,6 @@ export async function POST(req: NextRequest) {
       console.error("[Razorpay] Order creation failed:", error);
       
       const desc = error?.error?.description || "Order creation failed";
-      
-      // Specific hint for auth errors -> fall back to mock checkout for user convenience
-      if (desc.toLowerCase().includes("authentication") || rzpRes.status === 401) {
-        return NextResponse.json({
-          isMock: true,
-          planId,
-          planName,
-          warning: "Razorpay authentication failed, fell back to mock checkout."
-        });
-      }
       
       return NextResponse.json(
         { error: desc, details: error },

@@ -93,17 +93,6 @@ export default function SubscriptionPage() {
         throw new Error(data.details?.error?.description || data.error || "Order creation failed");
       }
 
-      if (data.isMock) {
-        showToast("Processing payment in Demo Mode...", "success");
-        setTimeout(() => {
-          setActivePlan(selectedPlan.id);
-          setShowModal(false);
-          setProcessing(false);
-          showToast(`Subscription activated! (${selectedPlan.name} Plan - Demo Mode)`, "success");
-        }, 1500);
-        return;
-      }
-
       const { orderId, amount, currency, keyId } = data;
 
       if (!orderId) throw new Error("Order creation failed - No order ID returned");
